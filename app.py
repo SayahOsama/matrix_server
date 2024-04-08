@@ -127,6 +127,9 @@ def convert_image_to_json(im, size):
     # Open image file
     # im = Image.open(input_file_path)
     # If it is 'GIF', then the file is a GIF
+    colors = []
+    height = None
+    width = None
     gif = False
     if im.format == 'GIF':
         gif = True
@@ -184,9 +187,6 @@ def convert_image_to_json(im, size):
     gif_json["colors_palette"] = colors
     gif_json["frame_sizes"] = frame_sizes
     gif_json["animation"] = compressed_frames
-    colors = []
-    height = None
-    width = None
     return gif_json
 
 
