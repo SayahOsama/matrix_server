@@ -127,9 +127,6 @@ def convert_image_to_json(im, size):
     # Open image file
     # im = Image.open(input_file_path)
     # If it is 'GIF', then the file is a GIF
-    colors = []
-    height = None
-    width = None
     gif = False
     if im.format == 'GIF':
         gif = True
