@@ -10,6 +10,26 @@ app = Flask(__name__)
 # if the gif's dimentions are bigger than 32x32 then the gif will be compressed, but the size relation of the dimentions will be preserved.
 # if the the gif's dimentions are smaller than 32x32 then it will not be resized, the gif will be centered.
 
+# size = 32,32
+NUM_LEDS = 1024
+gamma8 = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
+    2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5,
+    5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10,
+    10, 10, 11, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16,
+    17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25,
+    25, 26, 27, 27, 28, 29, 29, 30, 31, 32, 32, 33, 34, 35, 35, 36,
+    37, 38, 39, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 50,
+    51, 52, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68,
+    69, 70, 72, 73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89,
+    90, 92, 93, 95, 96, 98, 99, 101, 102, 104, 105, 107, 109, 110, 112, 114,
+    115, 117, 119, 120, 122, 124, 126, 127, 129, 131, 133, 135, 137, 138, 140, 142,
+    144, 146, 148, 150, 152, 154, 156, 158, 160, 162, 164, 167, 169, 171, 173, 175,
+    177, 180, 182, 184, 186, 189, 191, 193, 196, 198, 200, 203, 205, 208, 210, 213,
+    215, 218, 220, 223, 225, 228, 231, 233, 236, 239, 241, 244, 247, 249, 252, 255]
+
 # gamma corrects each RGB value in the frame
 def gamma_correct_frame(frame):
     for i in range(len(frame)):
@@ -30,7 +50,7 @@ def compress_frames(frames):
 
 
 # check if the color is in the colors list.
-def colors_exists(color):
+def colors_exists(color,colors):
     for i in range(len(colors)):
         if (colors[i] == color):
             return True
@@ -38,7 +58,7 @@ def colors_exists(color):
 
 
 # return index of the color in the colors list.
-def mapped_colors(color):
+def mapped_colors(color,colors):
     for i in range(len(colors)):
         if (colors[i] == color):
             return i
@@ -54,7 +74,7 @@ def delete_indetical_colors(prev_frame, frame):
 
 # replace every interval that has the same colors as neighbours with [color,start_index,length] such as color is the index of color in the colors list,
 # start_index is the start index of the interval and length is the number of neighbours with identical colors in the interval.
-def compress_identical_pixel_colors(frame):
+def compress_identical_pixel_colors(frame,colors):
     res_frame = []
     if len(frame) > 0 and frame[0] != -1:
         length = 1
@@ -68,10 +88,10 @@ def compress_identical_pixel_colors(frame):
     for i in range(1, len(frame)):
         if (frame[i] == -1):
             if (length > 0):
-                res_frame.append([mapped_colors(curr_color), start_index, length])
+                res_frame.append([mapped_colors(curr_color,colors), start_index, length])
             length = 0
             continue
-        if not colors_exists(frame[i]):
+        if not colors_exists(frame[i],colors):
             colors.append(frame[i])
 
         if (length == 0):
@@ -82,20 +102,20 @@ def compress_identical_pixel_colors(frame):
             if (frame[i] == curr_color):
                 length = length + 1
             else:
-                res_frame.append([mapped_colors(curr_color), start_index, length])
+                res_frame.append([mapped_colors(curr_color,colors), start_index, length])
                 length = 1
                 curr_color = frame[i]
                 start_index = i
     if (length > 0):
-        res_frame.append([mapped_colors(curr_color), start_index, length])
+        res_frame.append([mapped_colors(curr_color,colors), start_index, length])
     return res_frame
 
 
 # calls compress_frames(frames) and then calls compress_identical_pixel_colors for each frame and returns.
-def compress_gif(frames):
+def compress_gif(frames,colors):
     compressed_frames = compress_frames(frames)
     for i in range(len(compressed_frames)):
-        compressed_frames[i] = compress_identical_pixel_colors(compressed_frames[i])
+        compressed_frames[i] = compress_identical_pixel_colors(compressed_frames[i],colors)
     return compressed_frames
 
 
@@ -104,6 +124,9 @@ def convert_image_to_json(im, size):
     # Open image file
     # im = Image.open(input_file_path)
     # If it is 'GIF', then the file is a GIF
+    height = None
+    width = None
+    colors = []
     gif = False
     if im.format == 'GIF':
         gif = True
@@ -153,7 +176,7 @@ def convert_image_to_json(im, size):
         # frames.append(frame)
         frame = []
 
-    compressed_frames = compress_gif(frames)
+    compressed_frames = compress_gif(frames,colors)
     frame_sizes = []
     for i in range(len(compressed_frames)):
         frame_sizes.append(len(compressed_frames[i]))
@@ -164,36 +187,8 @@ def convert_image_to_json(im, size):
     return gif_json
 
 
-# size = 32,32
-NUM_LEDS = 1024
-colors = []
-height = None
-width = None
-gamma8 = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
-    2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5,
-    5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10,
-    10, 10, 11, 11, 11, 12, 12, 13, 13, 13, 14, 14, 15, 15, 16, 16,
-    17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25,
-    25, 26, 27, 27, 28, 29, 29, 30, 31, 32, 32, 33, 34, 35, 35, 36,
-    37, 38, 39, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 50,
-    51, 52, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 67, 68,
-    69, 70, 72, 73, 74, 75, 77, 78, 79, 81, 82, 83, 85, 86, 87, 89,
-    90, 92, 93, 95, 96, 98, 99, 101, 102, 104, 105, 107, 109, 110, 112, 114,
-    115, 117, 119, 120, 122, 124, 126, 127, 129, 131, 133, 135, 137, 138, 140, 142,
-    144, 146, 148, 150, 152, 154, 156, 158, 160, 162, 164, 167, 169, 171, 173, 175,
-    177, 180, 182, 184, 186, 189, 191, 193, 196, 198, 200, 203, 205, 208, 210, 213,
-    215, 218, 220, 223, 225, 228, 231, 233, 236, 239, 241, 244, 247, 249, 252, 255]
-
-
-
 @app.route('/process', methods=['POST'])
 def process_image():
-    colors = []
-    height = None
-    width = None
     if 'file' not in request.files:
         return jsonify({"status": "error", "message": "No file part"}), 400
     
