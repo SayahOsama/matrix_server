@@ -189,7 +189,9 @@ def convert_image_to_json(im, size):
 
 @app.route('/process', methods=['POST'])
 def process_image():
-    print("got here")
+    colors = []
+    height = None
+    width = None
     if 'file' not in request.files:
         return jsonify({"status": "error", "message": "No file part"}), 400
     
