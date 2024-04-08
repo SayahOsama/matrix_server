@@ -184,6 +184,9 @@ def convert_image_to_json(im, size):
     gif_json["colors_palette"] = colors
     gif_json["frame_sizes"] = frame_sizes
     gif_json["animation"] = compressed_frames
+    colors = []
+    height = None
+    width = None
     return gif_json
 
 
